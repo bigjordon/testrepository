@@ -1,0 +1,7 @@
+encryption
+
+tar czvf - purse_main.c | openssl des3 -salt -k passwd(birth06) -out purse_main.c.tar.gz
+
+decrypt
+
+openssl des3 -d -k password -salt -in purse_main.c.tar.gz | tar xzf -
