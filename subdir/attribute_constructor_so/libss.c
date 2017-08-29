@@ -12,7 +12,7 @@ int add(int a, int b)
     return 0;  
 }  
 //static void king() __attribute__((constructor(101))); the following is also right  
-static __attribute__((constructor(101))) void king()  
+static __attribute__((constructor())) void king()  
 {  
     printf("I am king\n");  
 }  
