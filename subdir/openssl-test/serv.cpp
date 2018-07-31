@@ -36,20 +36,20 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-void main ()
+int main ()
 {
   int err;
   int listen_sd;
   int sd;
   struct sockaddr_in sa_serv;
   struct sockaddr_in sa_cli;
-  size_t client_len;
+  socklen_t client_len;
   SSL_CTX* ctx;
   SSL*     ssl;
   X509*    client_cert;
   char*    str;
   char     buf [4096];
-  SSL_METHOD *meth;
+  const SSL_METHOD *meth;
   
   /* SSL preliminaries. We keep the certificate and key with the context. */
 
@@ -98,7 +98,7 @@ void main ()
   CHK_ERR(sd, "accept");
   close (listen_sd);
 
-  printf ("Connection from %lx, port %x\n",
+  printf ("Connection from %x, port %x\n",
 	  sa_cli.sin_addr.s_addr, sa_cli.sin_port);
   
   /* ----------------------------------------------- */
@@ -148,5 +148,6 @@ void main ()
   close (sd);
   SSL_free (ssl);
   SSL_CTX_free (ctx);
+  return 0;
 }
 /* EOF - serv.cpp */
