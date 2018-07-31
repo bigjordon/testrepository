@@ -32,9 +32,9 @@
 #define KEYF  HOME  "server.key"
 
 
-#define CHK_NULL(x) if ((x)==NULL) exit (1)
-#define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
-#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
+#define CHK_NULL(x) if ((x)==NULL) {printf("line: %d\n", __LINE__); exit (1);}
+#define CHK_ERR(err,s) if ((err)==-1) { perror(s); printf("line: %d\n", __LINE__); exit(1); }
+#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); printf("line: %d\n", __LINE__); exit(2); }
 
 int main ()
 {
@@ -55,7 +55,8 @@ int main ()
 
   SSL_load_error_strings();
   SSLeay_add_ssl_algorithms();
-  meth = SSLv23_server_method();
+  //meth = SSLv23_server_method(); SSLv2 now no support in 1.0.2o
+  meth = TLSv1_2_server_method();
   ctx = SSL_CTX_new (meth);
   if (!ctx) {
     ERR_print_errors_fp(stderr);

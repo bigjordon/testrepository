@@ -22,9 +22,9 @@
 #include <openssl/err.h>
 
 
-#define CHK_NULL(x) if ((x)==NULL) exit (1)
-#define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
-#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
+#define CHK_NULL(x) do {if ((x)==NULL) {printf("line: %d\n", __LINE__); exit (1); }} while(0)
+#define CHK_ERR(err,s) if ((err)==-1) { perror(s); printf("line: %d\n", __LINE__); exit(1); }
+#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); printf("line: %d\n", __LINE__);  exit(2); }
 
 int main ()
 {
@@ -39,9 +39,11 @@ int main ()
   const SSL_METHOD *meth;
 
   SSLeay_add_ssl_algorithms();
-  meth = SSLv2_client_method();
+  //meth = SSLv3_client_method(); openssl v2 not support in 1.0.2o now
+  meth = TLSv1_2_client_method();
   SSL_load_error_strings();
-  ctx = SSL_CTX_new (meth);                        CHK_NULL(ctx);
+  ctx = SSL_CTX_new (meth);
+  CHK_NULL(ctx);
 
   CHK_SSL(err);
   
@@ -61,9 +63,11 @@ int main ()
   /* ----------------------------------------------- */
   /* Now we have TCP conncetion. Start SSL negotiation. */
   
-  ssl = SSL_new (ctx);                         CHK_NULL(ssl);    
+  ssl = SSL_new (ctx);
+  CHK_NULL(ssl);    
   SSL_set_fd (ssl, sd);
-  err = SSL_connect (ssl);                     CHK_SSL(err);
+  err = SSL_connect (ssl);
+  CHK_SSL(err);
     
   /* Following two steps are optional and not required for
      data exchange to be successful. */
@@ -74,7 +78,8 @@ int main ()
   
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
 
-  server_cert = SSL_get_peer_certificate (ssl);       CHK_NULL(server_cert);
+  server_cert = SSL_get_peer_certificate (ssl);
+  CHK_NULL(server_cert);
   printf ("Server certificate:\n");
   
   str = X509_NAME_oneline (X509_get_subject_name (server_cert),0,0);
