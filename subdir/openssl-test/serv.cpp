@@ -41,8 +41,12 @@ int main ()
   int err;
   int listen_sd;
   int sd;
+  /*
   struct sockaddr_in sa_serv;
   struct sockaddr_in sa_cli;
+  */
+  struct sockaddr_in6 sa_serv;
+  struct sockaddr_in6 sa_cli;
   socklen_t client_len;
   SSL_CTX* ctx;
   SSL*     ssl;
@@ -80,13 +84,20 @@ int main ()
   /* ----------------------------------------------- */
   /* Prepare TCP socket for receiving connections */
 
-  listen_sd = socket (AF_INET, SOCK_STREAM, 0);   CHK_ERR(listen_sd, "socket");
+/*  listen_sd = socket (AF_INET, SOCK_STREAM, 0);   CHK_ERR(listen_sd, "socket"); */
+    listen_sd = socket (PF_INET6, SOCK_STREAM, 0);   CHK_ERR(listen_sd, "socket");
   
   memset (&sa_serv, '\0', sizeof(sa_serv));
+  #if 0
   sa_serv.sin_family      = AF_INET;
   sa_serv.sin_addr.s_addr = INADDR_ANY;
   sa_serv.sin_port        = htons (1111);          /* Server Port number */
-  
+  #endif 
+  sa_serv.sin6_family      = AF_INET6;
+  /*sa_serv.sin6_addr = in6addr_any;*/
+  inet_pton(AF_INET6, "::ffff:192.168.54.56", &sa_serv.sin6_addr);
+  sa_serv.sin6_port        = htons (1111);          /* Server Port number */
+
   err = bind(listen_sd, (struct sockaddr*) &sa_serv,
 	     sizeof(sa_serv));                    CHK_ERR(err, "bind");
 	     
@@ -99,8 +110,8 @@ int main ()
   CHK_ERR(sd, "accept");
   close (listen_sd);
 
-  printf ("Connection from %x, port %x\n",
-	  sa_cli.sin_addr.s_addr, sa_cli.sin_port);
+  printf ("Connection from %s, port %d\n",
+	  sa_cli.sin6_addr.s6_addr, sa_cli.sin6_port);
   
   /* ----------------------------------------------- */
   /* TCP connection is ready. Do server side SSL. */

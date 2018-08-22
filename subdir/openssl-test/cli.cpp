@@ -26,17 +26,44 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); printf("line: %d\n", __LINE__); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); printf("line: %d\n", __LINE__);  exit(2); }
 
-int main ()
+int main (int argc, char **argv)
 {
   int err;
   int sd;
+  int ipversion6 = 0;
   struct sockaddr_in sa;
+  struct sockaddr_in6 sa6;
   SSL_CTX* ctx;
   SSL*     ssl;
   X509*    server_cert;
   char*    str;
   char     buf [4096];
   const SSL_METHOD *meth;
+
+  if (argc == 2) {
+    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "h") == 0) {
+        printf("`client.bin 4 V4ADDR` use ipv4 client\n ");
+        printf("`client.bin 6 V6ADDR` use ipv6 client\n");
+        printf("`client.bin (h | -h)` print this help\n");
+        return 0;
+    } else {
+        printf ("Ivalid argument\n\n");
+        printf("`client.bin 4 V4ADDR` use ipv4 client\n ");
+        printf("`client.bin 6 V6ADDR` use ipv6 client\n");
+        printf("`client.bin (h | -h)` print this help\n");
+        return 0;
+    }
+  } else if (argc == 3) {
+        if (atoi(argv[1]) == 6) {
+            ipversion6 = 1;
+        }
+  } else {
+        printf ("Ivalid argument\n\n");
+        printf("`client.bin 4 V4ADDR` use ipv4 client\n ");
+        printf("`client.bin 6 V6ADDR` use ipv6 client\n");
+        printf("`client.bin (h | -h)` print this help\n");
+        return 0;
+  }
 
   SSLeay_add_ssl_algorithms();
   //meth = SSLv3_client_method(); openssl v2 not support in 1.0.2o now
@@ -50,15 +77,30 @@ int main ()
   /* ----------------------------------------------- */
   /* Create a socket and connect to server using normal socket calls. */
   
-  sd = socket (AF_INET, SOCK_STREAM, 0);       CHK_ERR(sd, "socket");
+  if (ipversion6) {
+    sd = socket (AF_INET6, SOCK_STREAM, 0);       CHK_ERR(sd, "socket");
+  } else {
+    sd = socket (AF_INET, SOCK_STREAM, 0);       CHK_ERR(sd, "socket");
+  }
  
   memset (&sa, '\0', sizeof(sa));
-  sa.sin_family      = AF_INET;
-  sa.sin_addr.s_addr = inet_addr ("127.0.0.1");   /* Server IP */
-  sa.sin_port        = htons     (1111);          /* Server Port number */
-  
-  err = connect(sd, (struct sockaddr*) &sa,
-		sizeof(sa));                   CHK_ERR(err, "connect");
+  memset (&sa6, '\0', sizeof(sa6));
+
+  if (ipversion6) {
+      sa6.sin6_family      = AF_INET6;
+      inet_pton(AF_INET6, argv[2], &sa6.sin6_addr); /* Server IP*/
+      sa6.sin6_port        = htons     (1111);          /* Server Port number */
+      
+      err = connect(sd, (struct sockaddr*) &sa6,
+            sizeof(sa6));                   CHK_ERR(err, "connect");
+  } else {
+      sa.sin_family      = AF_INET;
+      sa.sin_addr.s_addr = inet_addr (argv[2]);   /* Server IP */
+      sa.sin_port        = htons     (1111);          /* Server Port number */
+      
+      err = connect(sd, (struct sockaddr*) &sa,
+            sizeof(sa));                   CHK_ERR(err, "connect");
+  }
 
   /* ----------------------------------------------- */
   /* Now we have TCP conncetion. Start SSL negotiation. */
@@ -105,6 +147,9 @@ int main ()
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                     CHK_SSL(err);
   buf[err] = '\0';
   printf ("Got %d chars:'%s'\n", err, buf);
+
+  sleep(20);
+
   SSL_shutdown (ssl);  /* send SSL/TLS close_notify */
 
   /* Clean up. */
