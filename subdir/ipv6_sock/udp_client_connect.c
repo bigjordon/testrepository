@@ -10,10 +10,12 @@
 
 #define ERROR_DO printf("function: %s; line NO.: %d \
     error: %s \n", __FUNCTION__, __LINE__, strerror(errno))
-int start(void)
+
+
+#define PEERADDRSTR "2000:bb::58"
+#define LOCLADDRSTR "2000:bb::56"
+int start(int *serv_sock)
 {
-    int ssock;
-    int *serv_sock = &ssock;
     struct sockaddr_in6 local;                                                               
     struct sockaddr_in6 peer;                                                               
     int ret = 0;                                                                          
@@ -31,8 +33,8 @@ int start(void)
     local.sin6_family = AF_INET6;                                                             
     peer.sin6_family = AF_INET6;                                                             
                                                                                           
-    inet_pton(AF_INET6, "2000:bb::58", &peeraddr);
-    inet_pton(AF_INET6, "2000:bb::56", &localaddr);
+    inet_pton(AF_INET6, PEERADDRSTR, &peeraddr);
+    inet_pton(AF_INET6, LOCLADDRSTR, &localaddr);
     local.sin6_addr = localaddr ;                                      
     peer.sin6_addr = peeraddr ;                                     
                                                                                                 
@@ -48,7 +50,7 @@ int start(void)
                                                                                                 
     /* set timeout */                                                                           
     struct timeval tv_out;                                                                      
-    tv_out.tv_sec = 15;                                                                         
+    tv_out.tv_sec = 5;                                                                         
     tv_out.tv_usec = 0;                                                                         
     if(setsockopt(*serv_sock, SOL_SOCKET, SO_RCVTIMEO, &tv_out, sizeof(tv_out)) < 0){           
             close(*serv_sock);                                                                  
@@ -89,11 +91,55 @@ int start(void)
 
 }
 
-int main(int *serv_sock)                                                   
+int send6(void)
+{
+     int client_fd;
+     struct sockaddr_in6 ser_addr;
+     struct sockaddr_in6 cli_addr;
+
+     struct in6_addr seraddr;
+     struct in6_addr cliaddr;
+    #define BUFF_LEN 20 
+    char buf[20] = {"abc"}; 
+     client_fd = socket(AF_INET6, SOCK_DGRAM, 0);
+     if(client_fd < 0)
+     {
+         ERROR_DO;
+         return -1;
+     }
+ 
+     memset(&ser_addr, 0, sizeof(ser_addr));
+     memset(&cli_addr, 0, sizeof(ser_addr));
+
+     inet_pton(AF_INET6, LOCLADDRSTR, &seraddr);
+     inet_pton(AF_INET6, PEERADDRSTR, &cliaddr);
+     ser_addr.sin6_family = AF_INET6;
+     ser_addr.sin6_addr = seraddr;
+     ser_addr.sin6_port = htons(1121);
+    
+     cli_addr.sin6_family = AF_INET6;
+     cli_addr.sin6_addr = cliaddr;
+     cli_addr.sin6_port = htons(1111);
+
+     bind(client_fd, (struct sockaddr *)&cli_addr, sizeof(cli_addr));
+
+    sendto(client_fd, buf, BUFF_LEN, 0, (struct sockaddr*) &ser_addr, sizeof(ser_addr));
+    close(client_fd);
+    return 0;
+}
+int main(int argc, char **argv)                                                   
 {                                                                                             
-    start();
+    int sock;
+    int len;
+    char buff[256] = {0};
+    start(&sock);
     while (1) {
-        sleep(10);
+        // no work very well
+        send6();
+        len = read(sock, buff, 256);
+        ERROR_DO;
+        printf("len: %d\n", len);
+        sleep(3);
     }
     return 1;
 }
