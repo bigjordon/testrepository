@@ -14,7 +14,7 @@
 
 #define PEERADDRSTR "2000:bb::58"
 #define LOCLADDRSTR "2000:bb::56"
-int start(int *serv_sock)
+int start(int *serv_sock, int enable_connect)
 {
     struct sockaddr_in6 local;                                                               
     struct sockaddr_in6 peer;                                                               
@@ -59,8 +59,9 @@ int start(int *serv_sock)
     }                                                                                           
     if(setsockopt(*serv_sock, SOL_SOCKET, SO_BINDTODEVICE, "enp4s0", strlen("enp4s0")+1) < 0){
          ERROR_DO;
+         printf ("******please run with sudo or as root********\n");
         close(*serv_sock);                                                          
-        return -1;                                                                  
+        exit(0);                                                                  
     }                                                                                   
                                                                                                 
     int on = 1;                                                                                 
@@ -83,10 +84,13 @@ int start(int *serv_sock)
          ERROR_DO;
             return -1;                                                                      
     }                                                                                       
-     ret = connect(*serv_sock, (struct sockaddr *)&peer, local_len);                           
-    if(ret < 0){                                                                            
-            return -1;                                                                      
-    }                                                                                       
+    if (enable_connect) {
+        printf("enable udp connect\n");
+        ret = connect(*serv_sock, (struct sockaddr *)&peer, local_len);                           
+        if(ret < 0){                                                                            
+                return -1;                                                                      
+        }                                                                                       
+    }
     return 0;                                                                               
 
 }
@@ -121,7 +125,8 @@ int send6(void)
      cli_addr.sin6_addr = cliaddr;
      cli_addr.sin6_port = htons(1111);
 
-     bind(client_fd, (struct sockaddr *)&cli_addr, sizeof(cli_addr));
+     if (bind(client_fd, (struct sockaddr *)&cli_addr, sizeof(cli_addr)))
+         ERROR_DO;
 
     sendto(client_fd, buf, BUFF_LEN, 0, (struct sockaddr*) &ser_addr, sizeof(ser_addr));
     close(client_fd);
@@ -129,16 +134,20 @@ int send6(void)
 }
 int main(int argc, char **argv)                                                   
 {                                                                                             
+    enum {
+        DISABLE_CONNECT,
+        ENABLE_CONNECT
+    };
     int sock;
     int len;
     char buff[256] = {0};
-    start(&sock);
+    start(&sock, DISABLE_CONNECT);
     while (1) {
         // no work very well
         send6();
         len = read(sock, buff, 256);
-        ERROR_DO;
-        printf("len: %d\n", len);
+        if (len < 0)ERROR_DO;
+        printf("len: %d %s\n", len, buff);
         sleep(3);
     }
     return 1;
