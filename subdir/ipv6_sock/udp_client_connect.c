@@ -14,6 +14,8 @@
 
 #define PEERADDRSTR "2000:bb::58"
 #define LOCLADDRSTR "2000:bb::56"
+
+#define CONNECT_TEST
 int start(int *serv_sock, int enable_connect)
 {
     struct sockaddr_in6 local;                                                               
@@ -36,7 +38,17 @@ int start(int *serv_sock, int enable_connect)
     inet_pton(AF_INET6, PEERADDRSTR, &peeraddr);
     inet_pton(AF_INET6, LOCLADDRSTR, &localaddr);
     local.sin6_addr = localaddr ;                                      
+
+    /* if not assign peeraddr that *connect() system call will set peer to ::1
+
+        udp6       0      0 2000:bb::56:1121        ::1:1111
+        really did
+        use start(, enable) connet call enable
+        use `netstat -natu to see the netstat`
+    */
+#ifndef CONNECT_TEST // not compile this line
     peer.sin6_addr = peeraddr ;                                     
+#endif
                                                                                                 
     local.sin6_port = htons(1121);                     
     peer.sin6_port = htons(1111);                     
@@ -141,7 +153,12 @@ int main(int argc, char **argv)
     int sock;
     int len;
     char buff[256] = {0};
+
+#ifdef CONNECT_TEST 
+    start(&sock, ENABLE_CONNECT);
+#else
     start(&sock, DISABLE_CONNECT);
+#endif
     while (1) {
         // no work very well
         send6();
