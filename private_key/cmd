@@ -1,0 +1,4 @@
+openssl des3 -e -salt -in FILENAME -out FILENAME.enc
+key: pi
+
+openssl des3 -d -in FILENAME.enc -out SOMEFILENAME
