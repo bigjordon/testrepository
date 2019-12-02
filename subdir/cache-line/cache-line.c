@@ -2,8 +2,8 @@
 #include <stdlib.h>
 
 
-/* see cache line lenght using `cat /proc/cpuinfo` or other way*/
-#define CACHE_LINE_LEN 1024*3
+/* see cache line lenght using `lscpu` `cat /proc/cpuinfo` or other way*/
+#define CACHE_LINE_LEN 1024*32
 
 int step = 0;
 
